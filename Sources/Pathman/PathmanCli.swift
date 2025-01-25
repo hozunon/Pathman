@@ -2,8 +2,8 @@
 //  PathmanCli.swift
 //
 //
-//  Created by KSeou on 08/03/2024.
-//  Edited by kseou on 01/09/2024.
+//  Created by Hozu on 07/03/2024.
+//  Edited by Hozu on 25/01/2025.
 //
 
 import ArgumentParser
@@ -44,7 +44,8 @@ struct RemoveCommand: ParsableCommand {
 struct PathmanCli: ParsableCommand {
     static let shared: Pathman = {
             do {
-                return try Pathman()
+                let config = try PathmanConfigManager().loadOrDefault()
+                return try Pathman(rcFileNameOverride: config.defaultRcFile, autoSourceDefault: config.autoSource ?? true)
             } catch {
                 fatalError("Failed to initialize Pathman: \(error.localizedDescription)")
             }
