@@ -22,6 +22,11 @@ as these are the two shells I use most on my Mac device and Linux laptop. There 
 defaultRcFile = ".zprofile"
 autoSource = true
 ```
-- Create backup on demand of RC file or custom RC file
+- ~~Create backup on demand of RC file or custom RC file~~ You can now backup the RC file before changes are made with --backup true/false option. You can do the same in config.toml
+```toml
+defaultRcFile = ".zprofile"
+autoSource = true
+backup = true
+```
 - Add support for different environment variables? (LD_LIBRARY_PATH, PKG_CONFIG_PATH)
 - More?
