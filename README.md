@@ -1,4 +1,4 @@
-# Pathman: Shell Configuration Manager
+# Pathman: Effortless Shell Environment Management
 
 Pathman is a small tool written in Swift that helps you manage your PATH environment variables.
 
