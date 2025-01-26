@@ -1,6 +1,6 @@
 # Pathman: Shell Configuration Manager
 
-Pathman is a small tool written in Swift that helps you manage your shell RC files with ease, focusing on making your life a tad simpler when it comes to handling the `PATH` environment variable.
+Pathman is a small tool written in Swift that helps you manage your PATH environment variables.
 
 ## What Can Pathman Do?
 
