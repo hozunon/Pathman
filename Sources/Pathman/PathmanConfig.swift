@@ -13,6 +13,7 @@ import TOMLKit
 struct PathmanConfig: Decodable {
     var defaultRcFile: String?
     var autoSource: Bool?
+    var backup: Bool?
 }
 
 struct PathmanConfigManager {
@@ -46,7 +47,8 @@ struct PathmanConfigManager {
             let config = try TOMLDecoder().decode(PathmanConfig.self, from: table)
             return PathmanConfig(
                 defaultRcFile: config.defaultRcFile,
-                autoSource: config.autoSource ?? true
+                autoSource: config.autoSource ?? true,
+                backup: config.backup ?? false
             )
         } catch {
             // If parsing fails for any reason, return defaults.

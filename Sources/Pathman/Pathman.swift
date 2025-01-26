@@ -64,10 +64,12 @@ struct Pathman {
     private let shell: Shell
     private let filePath: URL
     private let autoSourceDefault: Bool
+    private let backupDefault: Bool
     
     init(fileManager: FileManager = .default,
          rcFileNameOverride: String? = nil,
-         autoSourceDefault: Bool = true)
+         autoSourceDefault: Bool = true,
+         backupDefault: Bool = false)
     throws {
         
         self.fileManager = fileManager
@@ -84,14 +86,15 @@ struct Pathman {
         } ?? homeURL.appendingPathComponent(shell.rcFileName)
 
         self.autoSourceDefault = autoSourceDefault
+        self.backupDefault = backupDefault
     }
     
-    func addToPath(_ directory: String, sourcing: Bool? = nil) throws {
-        try modifyPath(action: .add(directory), sourcing: sourcing ?? autoSourceDefault)
+    func addToPath(_ directory: String, sourcing: Bool? = nil, backup: Bool? = nil) throws {
+        try modifyPath(action: .add(directory), sourcing: sourcing ?? autoSourceDefault, backup: backup ?? backupDefault)
     }
     
-    func removeFromPath(_ directory: String, sourcing: Bool? = nil) throws {
-        try modifyPath(action: .remove(directory), sourcing: sourcing ?? autoSourceDefault)
+    func removeFromPath(_ directory: String, sourcing: Bool? = nil, backup: Bool? = nil) throws {
+        try modifyPath(action: .remove(directory), sourcing: sourcing ?? autoSourceDefault, backup: backup ?? backupDefault)
     }
     
     private enum PathAction {
@@ -106,8 +109,14 @@ struct Pathman {
         }
     }
     
-    private func modifyPath(action: PathAction, sourcing: Bool) throws {
+    private func modifyPath(action: PathAction, sourcing: Bool, backup: Bool) throws {
         var content = try String(contentsOf: filePath)
+        
+        if backup {
+            let backupURL = filePath.deletingPathExtension().appendingPathExtension("bak")
+            print("Backing up \(shell.rcFileName) to \(backupURL.lastPathComponent)")
+            try fileManager.copyItem(at: filePath, to: backupURL)
+        }
         
         switch action {
         case .add(let directory):
