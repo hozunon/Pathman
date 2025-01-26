@@ -13,7 +13,6 @@ import Foundation
 enum Shell: String, CaseIterable {
     case bash, zsh
     
-    //var rcFileName: String { ".\(rawValue)rc" }
     var rcFileName: String {
         switch self {
         case .bash:
@@ -21,12 +20,12 @@ enum Shell: String, CaseIterable {
         case .zsh:
             let fileManager = FileManager.default
             let homeURL = fileManager.homeDirectoryForCurrentUser
-            let zprofilePath = homeURL.appendingPathComponent(".zprofile").path
-            let zshrcPath = homeURL.appendingPathComponent(".zshrc").path
+            let zprofilePath = homeURL.appendingPathComponent(".zprofile")
+            let zshrcPath = homeURL.appendingPathComponent(".zshrc")
             
-            if fileManager.fileExists(atPath: zprofilePath) {
+            if fileManager.fileExists(atPath: zprofilePath.path) {
                 return ".zprofile"
-            } else if fileManager.fileExists(atPath: zshrcPath) {
+            } else if fileManager.fileExists(atPath: zshrcPath.path) {
                 return ".zshrc"
             } else {
                 return ".zshrc"
@@ -63,22 +62,27 @@ enum PathmanError: Error, LocalizedError {
 struct Pathman {
     private let fileManager: FileManager
     private let shell: Shell
-    private let filePath: String
+    private let filePath: URL
     private let autoSourceDefault: Bool
     
-    init(fileManager: FileManager = .default, rcFileNameOverride: String? = nil, autoSourceDefault: Bool = true) throws {
+    init(fileManager: FileManager = .default,
+         rcFileNameOverride: String? = nil,
+         autoSourceDefault: Bool = true)
+    throws {
+        
         self.fileManager = fileManager
-        let home = fileManager.homeDirectoryForCurrentUser.path
+        let homeURL = fileManager.homeDirectoryForCurrentUser
         
         guard let shellPath = ProcessInfo.processInfo.environment["SHELL"],
               let detectedShell = Shell.from(shellPath: shellPath) else {
             throw PathmanError.shellNotFound
         }
-        shell = detectedShell
-        filePath = rcFileNameOverride != nil
-            ? "\(home)/\(rcFileNameOverride!)"
-            : "\(home)/\(shell.rcFileName)"
         
+        shell = detectedShell
+        filePath = rcFileNameOverride.map {
+            homeURL.appendingPathComponent($0)
+        } ?? homeURL.appendingPathComponent(shell.rcFileName)
+
         self.autoSourceDefault = autoSourceDefault
     }
     
@@ -103,47 +107,52 @@ struct Pathman {
     }
     
     private func modifyPath(action: PathAction, sourcing: Bool) throws {
-        let url = URL(fileURLWithPath: filePath)
-        var content = try String(contentsOf: url)
+        var content = try String(contentsOf: filePath)
         
         switch action {
         case .add(let directory):
-            if isDirectoryInPath(directory, content: content) {
+            
+            guard !isDirectoryInPath(directory, content: content) else {
                 print("Directory '\(directory)' is already in PATH. No changes made.")
                 return
             }
+            
             content += "\nexport PATH=\"\(directory):$PATH\""
             print("Directory added to PATH in \(shell.rcFileName)")
+            
         case .remove:
             guard let range = content.range(of: "export PATH=\".*\(action.directory):.*\"", options: .regularExpression) else {
                 throw PathmanError.directoryNotFound(action.directory)
             }
+            
             content.removeSubrange(range)
             content = content
                 .replacingOccurrences(of: "export PATH=\":$PATH\"", with: "")
+            
                 .replacingOccurrences(of: "\n+", with: "\n", options: .regularExpression)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
+            
             print("Directory removed from PATH in \(shell.rcFileName)")
         }
         
-        try content.write(to: url, atomically: true, encoding: .utf8)
+        try content.write(to: filePath, atomically: true, encoding: .utf8)
         
         if sourcing {
             do {
-                try runCmd("source \(filePath)")
-                print("Sourced \(filePath) successfully")
+                try runCmd("source \(filePath.path)")
+                print("Sourced \(filePath.path) successfully")
             } catch {
                 throw PathmanError.sourceFailure(error.localizedDescription)
             }
         } else {
             print("\nTo apply changes, run this command in your terminal:")
-            print("source \(filePath)")
+            print("source \(filePath.path)")
         }
     }
     
     private func isDirectoryInPath(_ directory: String, content: String) -> Bool {
         let pattern = "export PATH=\"(.*\(directory):.*)\"|export PATH=\"(.*:\(directory).*)\""
-        let regex = try? NSRegularExpression(pattern: pattern, options: [])
+        let regex = try? NSRegularExpression(pattern: pattern)
         let range = NSRange(content.startIndex..., in: content)
         return regex?.firstMatch(in: content, options: [], range: range) != nil
     }

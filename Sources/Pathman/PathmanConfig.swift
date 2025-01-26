@@ -20,15 +20,15 @@ struct PathmanConfigManager {
     
     init() throws {
         let fileManager = FileManager.default
-        let homeConfigDir = fileManager.homeDirectoryForCurrentUser
+        let configDirectory = fileManager.homeDirectoryForCurrentUser
             .appendingPathComponent(".config/pathman")
             
         // create dir if it doesn't exist
-        if !fileManager.fileExists(atPath: homeConfigDir.path) {
-            try fileManager.createDirectory(at: homeConfigDir, withIntermediateDirectories: true, attributes: nil)
+        if !fileManager.fileExists(atPath: configDirectory.path) {
+            try fileManager.createDirectory(at: configDirectory, withIntermediateDirectories: true)
         }
         
-        self.configURL = homeConfigDir.appendingPathComponent("config.toml")
+        self.configURL = configDirectory.appendingPathComponent("config.toml")
     }
     
     func loadOrDefault() throws -> PathmanConfig {
